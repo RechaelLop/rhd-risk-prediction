@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
 from faker import Faker
-import matplotlib.pyplot as plt  # For basic visualization
+import matplotlib.pyplot as plt
 import os
 
-output_folder = r"C:\Users\lopes\OneDrive\Desktop\PROJECTS\Rhesus Disease (RHD) Risk Prediction"
+# Configure output directory
+output_folder = os.path.join(os.path.expanduser("~"), "OneDrive", "Desktop", "PROJECTS", "Rhesus Disease (RHD) Risk Prediction")
+os.makedirs(output_folder, exist_ok=True)
 
 def generate_rhd_data(num_patients=1000):
     """Generate synthetic Rhesus disease dataset"""
@@ -33,43 +35,68 @@ def generate_rhd_data(num_patients=1000):
     
     return df
 
-def save_and_analyze(df, filename="synthetic_rhd_data.csv"):
-    """Save data and show basic stats"""
-    # Save to CSV
-    df.to_csv(filename, index=False)
-    print(f"✅ Dataset saved to {filename}")
+def save_data(df, filepath):
+    """Save dataframe with validation checks"""
+    try:
+        df.to_csv(filepath, index=False)
+        print(f"✅ Successfully saved to {filepath}")
+        return True
+    except Exception as e:
+        print(f"❌ Error saving file: {e}")
+        return False
+
+def preprocess_data(df):
+    """Preprocess the raw dataset"""
+    # One-hot encode categorical features
+    df = pd.get_dummies(df, columns=["blood_type", "rh_factor", "father_rh", "antibody_test"])
     
-    # Show basic info
-    print("\n📊 Dataset Summary:")
-    print(df.info())
+    # Normalize numeric features
+    df["age"] = (df["age"] - df["age"].mean()) / df["age"].std()
+    df["prev_pregnancies"] = (df["prev_pregnancies"] - df["prev_pregnancies"].min()) / \
+                           (df["prev_pregnancies"].max() - df["prev_pregnancies"].min())
+    return df
+
+def plot_distributions(df):
+    """Generate comprehensive visualizations"""
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     
-    # Show risk score distribution
-    print("\n📈 Risk Score Distribution:")
-    print(df["risk_score"].value_counts())
+    # Rh Factor Distribution
+    df["rh_factor"].value_counts().plot(kind='bar', ax=axes[0,0], title='Rh Factor')
     
-    # Simple visualization
-    df["rh_factor"].value_counts().plot(kind="bar", title="Rh Factor Distribution")
+    # Age Distribution
+    df["age"].plot(kind='hist', ax=axes[0,1], title='Age Distribution')
+    
+    # Risk Score Distribution
+    df["risk_score"].value_counts().plot(kind='pie', ax=axes[1,0], autopct='%1.1f%%', title='Risk Score')
+    
+    # Pregnancies Distribution
+    df["prev_pregnancies"].value_counts().sort_index().plot(kind='bar', ax=axes[1,1], title='Previous Pregnancies')
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'data_distributions.png'))
     plt.show()
 
 if __name__ == "__main__":
-    print("Generating synthetic Rhesus disease data...")
-    # To generate more records
-    rhd_data = generate_rhd_data(num_patients=5000)
+    # Configuration
+    NUM_PATIENTS = 5000
+    RAW_DATA_PATH = os.path.join(output_folder, "rhd_raw_data.csv")
+    PROCESSED_DATA_PATH = os.path.join(output_folder, "rhd_processed_data.csv")
 
-    # To change file output location
-    save_and_analyze(rhd_data, filename="C:/Users/lopes/OneDrive/Desktop/PROJECTS/Rhesus Disease (RHD) Risk Prediction/rhd_dataset.csv")
-
-    # Pre-processing the data
-    # Add this to your save_and_analyze() function
-    def preprocess_data(df):
-        # One-hot encode categorical features
-        df = pd.get_dummies(df, columns=["blood_type", "rh_factor", "father_rh", "antibody_test"])
+    print("🚀 Generating synthetic Rhesus disease data...")
+    
+    # Data Generation
+    rhd_data = generate_rhd_data(num_patients=NUM_PATIENTS)
+    
+    # Save Raw Data
+    if save_data(rhd_data, RAW_DATA_PATH):
+        print("📊 Basic Statistics:")
+        print(rhd_data.describe())
         
-        # Normalize age and pregnancies
-        df["age"] = (df["age"] - df["age"].mean()) / df["age"].std()
-        df["prev_pregnancies"] = (df["prev_pregnancies"] - df["prev_pregnancies"].min()) / \
-                                (df["prev_pregnancies"].max() - df["prev_pregnancies"].min())
-        return df
-
-    processed_data = preprocess_data(rhd_data)
-    processed_data.to_csv(os.path.join(output_folder, "processed_rhd_data.csv"), index=False)
+        # Preprocessing
+        processed_data = preprocess_data(rhd_data)
+        if save_data(processed_data, PROCESSED_DATA_PATH):
+            print("🔍 Processed Data Sample:")
+            print(processed_data.head())
+            
+            # Visualization
+            plot_distributions(rhd_data)
