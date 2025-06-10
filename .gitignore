@@ -1,4 +1,5 @@
 models/*.pkl
 models/*.joblib
 *.egg-info/
+venv/
 

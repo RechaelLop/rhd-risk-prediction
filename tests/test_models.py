@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from src.models.train_model import train_model
+from rhd_risk_prediction.models.train_model import train_model
 
 @pytest.fixture
 def sample_data():

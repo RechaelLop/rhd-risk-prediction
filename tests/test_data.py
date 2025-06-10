@@ -1,5 +1,5 @@
 import pandas as pd
-from src.data.make_dataset import generate_rhd_data
+from rhd_risk_prediction.data.make_dataset import generate_rhd_data
 
 def test_data_generation():
     """Test that data generation produces valid output"""
